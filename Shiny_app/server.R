@@ -1,5 +1,5 @@
 #
-# Server logic for "Where Should I Travel Next?" shiny application
+# Server logic for "Stadium Explorer" shiny application
 #
 
 library(shiny); require(dplyr); require(leaflet); require(jsonlite)
@@ -164,7 +164,7 @@ shinyServer(function(input, output, session) {
 	output$map <- renderLeaflet({
 		leaflet() %>%
 			addProviderTiles("CartoDB.Positron") %>%
-			setView(lng = 60, lat = 37.45, zoom = 2)
+			setView(lng = -95, lat = 38, zoom = 5)
 	})
 
 	# assign country types according to user input
