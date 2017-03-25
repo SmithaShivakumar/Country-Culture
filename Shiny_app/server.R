@@ -7,6 +7,7 @@ require(geojsonio); require(scales);
 
 ## this code only runs once and is available across sessions ---------------
 map_data <- geojson_read("data/countries.geojson", what = "sp")
+test_map <- readRDS("data/test.RDS")
 culture_dims <- c("IDV", "IND", "LTO", "MAS", "PDI", "UAI")
 culture_data <- rawData[, culture_dims]
 
@@ -164,7 +165,10 @@ shinyServer(function(input, output, session) {
 	output$map <- renderLeaflet({
 		leaflet() %>%
 			addProviderTiles("CartoDB.Positron") %>%
-			setView(lng = -95, lat = 38, zoom = 5)
+			setView(lng = -95, lat = 38, zoom = 5) %>%
+			addMarkers(data = test_map,
+					   popup = test_map$Stadium.Name) # testing popups
+			
 	})
 
 	# assign country types according to user input
