@@ -7,10 +7,11 @@ library(shiny); require(leaflet); library(shinythemes)
 stadium_list <- sort(rawData$Stadium.Name)
 
 dimensions <- c("Food Safety" = "Food.Safety",
-				 "Altitude" = "Altitude",
-				 "Capacity" = "Capacity",
-				 "Park Factor" = "Park.Factor",
-				 "Stadium Age" = "Seasons")
+				 "Altitude" = "Altitude_Normalized",
+				 "Capacity" = "CapacityNormalized",
+				 "Park Factor" = "Park.Factor.Normalized",
+				 "Stadium Age" = "Age",
+				 "Stadium Type (outdoor/dome)" = "Indoor.Outdoor")
 
 # Define UI
 shinyUI(navbarPage(

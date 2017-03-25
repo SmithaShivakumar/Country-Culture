@@ -35,6 +35,7 @@ inputsCheck <- function(X, visited, home, dims){
 	char_dims <- unlist(dims) # coerce dims to vector
 	if (length(char_dims) == 1) {
 		rdata <- as.data.frame(X[ ,char_dims])
+
 		row.names(rdata) <- X$Stadium.Name
 		names(rdata) <- eval(char_dims)
 		incompletes <- X[!complete.cases(X[ ,char_dims]), "Stadium.Name"]
@@ -155,8 +156,10 @@ shinyServer(function(input, output, session) {
 		leaflet() %>%
 			addProviderTiles("CartoDB.Positron") %>%
 			setView(lng = -95, lat = 38, zoom = 5) %>%
-			addMarkers(data = rawData)
+			addCircleMarkers(data = rawData, layerId = rawData$Stadium.Name,
+							 clusterId = "circles")
 					   # ,popup = rawData$Stadium.Name) # testing popups
+					 
 			
 	})
 
@@ -225,25 +228,38 @@ shinyServer(function(input, output, session) {
 		updateSelectInput(session, "home", choices = home_list, selected = home())
 
 		# set up country polygon colors
-		top3 <- head(arrange(stadiums(), desc(score)), 3)$Stadium.Name
-		print(arrange(select(stadiums(), Stadium.Name, score), desc(score)))
-		# rec_score <- stadiums()$score
+		topRec <- head(arrange(stadiums(), desc(score)), 1)
+		print(topRec)
+		# print(arrange(select(stadiums(), Stadium.Name, score), desc(score)))
+		rec_score <- stadiums()$score
 		# score_alpha <- rec_score/max(rec_score, na.rm = T)
-		# 
-		# colors <- data.frame(Stadium.Name = stadiums()$Country,
-		# 					 fill = ifelse(countries()$type == "missing", "grey",
-		# 					 			  ifelse(countries()$type == "home", "blue",
-		# 				 			   	      ifelse(countries()$type == "visited", "green",
-		# 				 		 	   	   	     "red"))),
-		# 					 line = ifelse(countries()$type == "missing", "#eaeaea",
-		# 					 			  ifelse(countries()$Country %in% top3, "orange",
-		# 					 			  	   "#919191")),
-		# 					 weight = ifelse(countries()$Country %in% top3, 4, 1),
-		# 					 alpha = ifelse(countries()$type == "missing", 0,
-		# 					 			   ifelse(countries()$type == "home", .6,
-		# 					 			   	   ifelse(countries()$type == "visited", .6,
-		# 					 			   	   	   score_alpha)))
-		# 					 )
+		score_size <- 3+20*rec_score/max(rec_score, na.rm = T)
+		type <- stadiums()$type
+		
+		opts <- data.frame(Stadium.Name = stadiums()$Stadium.Name,
+							 fill = ifelse(type == "missing", "grey",
+							 			  ifelse(type == "home", "blue",
+						 			   	      ifelse(type == "visited", "green",
+						 		 	   	   	     "red"))),
+							 # alpha = ifelse(type == "missing", 0,
+							 # 			   ifelse(type == "home", .6,
+							 # 			   	   ifelse(type == "visited", .6,
+							 # 			   	   	   score_alpha))),
+ 							 radius = ifelse(type == "missing", 0,
+		 								ifelse(type == "home", 10,
+		 									   ifelse(type == "visited", 10,
+		 									   	   score_size)))
+							 )
+		
+		leafletProxy("map") %>% removeMarkerCluster("circles") %>%
+			addCircleMarkers(data = rawData, layerId = rawData$Stadium.Name,
+							 clusterId = "circles",
+							 fillColor = opts$fill,
+							 fillOpacity = .6,
+							 stroke = F,
+							 radius = opts$radius) %>%
+			addMarkers(data = topRec, layerId = "top")
+			
 		
 		##TEMPORARY: print the list of countries and recommend scores as a simple table
 		# output$recs <- renderTable({
@@ -255,22 +271,27 @@ shinyServer(function(input, output, session) {
 	# Show a popup at the given country
 	observe({
 		showStadiumPopup <- function(stadium, lat, lng) {
-			selectedStadium <- stadiums()[stadiums()$Stadium.Name == stadium,]
+			selectedStadiumScore <- stadiums()[stadiums()$Stadium.Name == stadium,"score"]
+			selectedStadium <- rawData[rawData$Stadium.Name == stadium,]
 			
 			# show home/visited status or rec score
-			# if (stadium %in% home() && !is.null(home())) {
-			# 		status <- sprintf("Status: home stadium")
-			# 	}
-			# else if (stadium %in% visited() && !is.null(visited())) {
-			# 	status <- sprintf("Status: visited")
-			# }
-			# else status <- sprintf("Recommendation Score: %.0f", round(selectedStadium$score),1)
+			if (stadium %in% home() && !is.null(home())) {
+					status <- sprintf("Status: home stadium")
+				}
+			else if (stadium %in% visited() && !is.null(visited())) {
+				status <- sprintf("Status: visited")
+			}
+			else status <- sprintf("Recommendation Score: %.0f", 100*selectedStadiumScore)
 
 			content <- as.character(tagList(
 				tags$h4(stadium),
-				# tags$strong(HTML(status)), tags$br(),
+				tags$strong(HTML(status)), tags$br(),
+				sprintf("Team: %s", selectedStadium$Team), tags$br(),
 				sprintf("%s, %s", selectedStadium$City, selectedStadium$State), tags$br(),
-				sprintf("Altitude: %s", selectedStadium$Altitude), tags$br()
+				sprintf("Altitude: %.0f feet", selectedStadium$Altitude), tags$br(),
+				sprintf("Capacity: %.0f", selectedStadium$Capacity), tags$br(),
+				sprintf("Seasons in Stadium: %.0f", selectedStadium$Age.of.the.Stadium), tags$br(),
+				sprintf("Stadium Type: %s", selectedStadium$stadium.type), tags$br()
 			))
 			leafletProxy("map") %>% 
 				addPopups(lng, lat, content, layerId = "popup",
@@ -284,6 +305,7 @@ shinyServer(function(input, output, session) {
 			return()
 		isolate({
 			showStadiumPopup(event$id, event$lat, event$lng)
+			# print(event$Stadium.Name)
 		})
 	})
 })
