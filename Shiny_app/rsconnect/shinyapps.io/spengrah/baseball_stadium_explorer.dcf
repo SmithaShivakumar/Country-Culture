@@ -1,0 +1,11 @@
+name: baseball_stadium_explorer
+title: Baseball Stadium Explorer
+account: spengrah
+server: shinyapps.io
+appId: 167094
+bundleId: 763260
+url: https://spengrah.shinyapps.io/baseball_stadium_explorer/
+when: 1490477744.29927
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: data/test.RDS
